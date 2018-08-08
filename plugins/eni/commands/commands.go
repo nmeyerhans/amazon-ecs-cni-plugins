@@ -110,33 +110,31 @@ func add(args *skel.CmdArgs, engine engine.Engine, dhclient engine.DHClient) err
 
 	ipv6Address := ""
 	ipv6Gateway := ""
-	if conf.IPV6Address != "" {
-		// Config contains an ipv6 address, figure out the subnet mask
-		ipv6Netmask, err := engine.GetIPV6PrefixLength(macAddressOfENI)
-		if err != nil {
-			log.Errorf("Unable to get ipv6 netmask for ENI (device name=%s): %v", networkDeviceName, err)
-			return err
-		}
-		ipv6Address = fmt.Sprintf("%s/%s", conf.IPV6Address, ipv6Netmask)
-		log.Debugf("IPV6 address (device name=%s): %v", networkDeviceName, ipv6Address)
-
-		// Next, figure out the gateway ip
-		ipv6Gateway, err = engine.GetIPV6Gateway(networkDeviceName)
-		if err != nil {
-			log.Errorf("Unable to get ipv6 gateway for ENI (device name=%s): %v", networkDeviceName, err)
-			return err
-		}
-		log.Infof("IPV6 Gateway IP (device name=%s): %v", networkDeviceName, ipv6Gateway)
-		_, ipv6net, err := net.ParseCIDR(ipv6Address)
-		if err != nil {
-			return errors.Wrapf(err, "add eni: failed to parse ipv6 gateway: %s", ipv6Address)
-		}
-
-		ips = append(ips, &current.IPConfig{
-			Version: "6",
-			Address: *ipv6net,
-		})
+	// Config contains an ipv6 address, figure out the subnet mask
+	ipv6Netmask, err := engine.GetIPV6PrefixLength(macAddressOfENI)
+	if err != nil {
+		log.Errorf("Unable to get ipv6 netmask for ENI (device name=%s): %v", networkDeviceName, err)
+		return err
 	}
+	ipv6Address = fmt.Sprintf("%s/%s", conf.IPV6Address, ipv6Netmask)
+	log.Debugf("IPV6 address (device name=%s): %v", networkDeviceName, ipv6Address)
+
+	// Next, figure out the gateway ip
+	ipv6Gateway, err = engine.GetIPV6Gateway(networkDeviceName)
+	if err != nil {
+		log.Errorf("Unable to get ipv6 gateway for ENI (device name=%s): %v", networkDeviceName, err)
+		return err
+	}
+	log.Infof("IPV6 Gateway IP (device name=%s): %v", networkDeviceName, ipv6Gateway)
+	_, ipv6net, err := net.ParseCIDR(ipv6Address)
+	if err != nil {
+		return errors.Wrapf(err, "add eni: failed to parse ipv6 gateway: %s", ipv6Address)
+	}
+
+	ips = append(ips, &current.IPConfig{
+		Version: "6",
+		Address: *ipv6net,
+	})
 
 	// Everything's prepped. We have all the parameters needed to configure
 	// the network namespace of the ENI. Invoke SetupContainerNamespace to
